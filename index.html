@@ -1,0 +1,46 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Bot RSI(2) - démo</title><style>
+body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;background:#0f1419;color:#e6e9ee;margin:0;padding:24px;max-width:1100px;margin:auto}
+h1{font-size:22px;margin:0}.sub{color:#8b95a3;font-size:13px;margin:4px 0 18px}.badge{background:#1f6feb;color:#fff;border-radius:6px;padding:2px 8px;font-size:12px;margin-left:8px}
+.badge.r{background:#9a6700}.cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px}
+.card{background:#161b22;border:1px solid #262d36;border-radius:10px;padding:12px}.card b{display:block;font-size:20px;margin-top:4px}.l{color:#8b95a3;font-size:12px}
+.pos{color:#3fb950}.neg{color:#f85149}section{background:#161b22;border:1px solid #262d36;border-radius:10px;padding:14px;margin-bottom:16px}
+h2{font-size:15px;margin:0 0 10px}table{width:100%;border-collapse:collapse;font-size:13px}th,td{text-align:left;padding:6px 8px;border-bottom:1px solid #21262d;vertical-align:top}th{color:#8b95a3;font-weight:500}
+canvas{width:100%;height:300px}.leg span{margin-right:14px;font-size:13px}.warn{color:#8b95a3;font-size:12px;margin-top:8px}
+</style></head><body><div style="background:#3d2d00;border:1px solid #9a6700;color:#f0d98a;border-radius:8px;padding:10px 12px;margin:0 0 16px;font-size:13px"><strong>Instantané de démonstration, données affichées au 20 novembre 2026.</strong> Le runner n’a pas encore publié de données plus récentes. Simulation uniquement, aucun ordre réel.</div><div id=app></div><script>
+const D={"meta": {"start": "2026-11-20", "label": "LIVE", "symbol": "QQQ", "start_open": "638.8400268554688"}, "kpi": {"equity": 10000.0, "ret": 0.0, "bench": 0.0, "mdd": 0.0, "trades": 0, "win": 0, "cash": 10000.0, "shares": 0, "price": 608.4500122070312, "date": "2026-11-20"}, "eq": {"date": ["2026-11-20"], "equity": [10000.0], "bench": [9524.293823634927]}, "dec": [{"date": "2026-11-20", "close": 608.4500122070312, "rsi": 1.752238868041971, "sma": 683.0608499145508, "action": "HOLD", "reasoning": "Pas d'entree: cours 608.45 sous SMA200 683.06."}], "tr": [], "od": [], "ict": {"events": [], "trades": [], "open": null, "pending": null, "curve": [[null, 10000.0]], "equity": 10000.0, "last_bar": "2026-11-20 16:55:00-05:00", "start": "2026-11-21", "label": "LIVE"}};const k=D.kpi,m=D.meta;const f=(x,n=2)=>Number(x).toLocaleString('fr-FR',{minimumFractionDigits:n,maximumFractionDigits:n});
+const cl=x=>x>=0?'pos':'neg';
+function ictSection(s){const tr=s.trades,wins=tr.filter(x=>x.r>0).length,tot=tr.reduce((a,x)=>a+x.r,0),eq=s.equity;
+const st=s.open?`<b class=pos>Position ouverte</b>: ${s.open.side=='S'?'VENTE':'ACHAT'} à ${f(s.open.entry)}, stop ${f(s.open.stop)}, cible ${f(s.open.tp)}`:s.pending?`<b>Ordre limite en attente</b>: ${s.pending.side=='S'?'VENTE':'ACHAT'} à ${f(s.pending.entry)}, stop ${f(s.pending.stop)}, cible ${f(s.pending.tp)}`:'Aucune position, aucun ordre en attente';
+return `<section style="border-color:#9a6700"><h2>Bot ICT 2022 sur NQ (5 min) <span class="badge r">À VALIDER</span><span class="badge ${s.label=='REPLAY'?'r':''}">${s.label=='REPLAY'?'REPLAY du passé':'SIMULATION - démo'}</span></h2>
+<div class=sub>Départ ${s.start} · dernière barre 5 min : ${s.last_bar.slice(0,16)} (heure NY) · risque 0,25 % par trade · max 3 trades/jour · stop après 2 pertes/jour · stratégie non prouvée, backtest non significatif (t&lt;1,1)</div>
+<div class=cards><div class=card><span class=l>Capital virtuel</span><b>${f(eq)} $</b></div><div class=card><span class=l>Performance</span><b class=${cl(eq-1e4)}>${f((eq/1e4-1)*100)} %</b></div>
+<div class=card><span class=l>Trades / gagnants</span><b>${tr.length} / ${tr.length?f(wins/tr.length*100,0):0} %</b></div><div class=card><span class=l>Total en R</span><b class=${cl(tot)}>${f(tot,1)} R</b></div></div>
+<p>${st}</p><canvas id=c2 style="height:200px"></canvas>
+<h2 style="margin-top:12px">Journal ICT (30 derniers événements)</h2><table><tr><th>Heure NY</th><th>Type</th><th>Raisonnement</th></tr>${s.events.slice(-30).reverse().map(e=>`<tr><td>${e.ts.slice(0,16)}</td><td>${e.kind}</td><td>${e.text}</td></tr>`).join('')}</table>
+<h2 style="margin-top:12px">Trades ICT</h2><table><tr><th>Entrée</th><th>Sens</th><th>Prix</th><th>Sortie</th><th>Prix</th><th>Résultat</th></tr>${tr.slice().reverse().slice(0,40).map(x=>`<tr><td>${x.entry_time.slice(0,16)}</td><td>${x.side=='S'?'Vente':'Achat'}</td><td>${f(x.entry)}</td><td>${x.exit_time.slice(0,16)}</td><td>${f(x.exit)}</td><td class=${cl(x.r)}>${f(x.r)} R (${x.why})</td></tr>`).join('')}</table></section>`}
+function drawLine(id,xs,ys,col){const c=document.getElementById(id);if(!c)return;const r=devicePixelRatio||1,W=c.clientWidth,H=c.clientHeight;c.width=W*r;c.height=H*r;const g=c.getContext('2d');g.scale(r,r);const n=ys.length;if(n<2){g.fillStyle='#8b95a3';g.fillText('Pas encore de trade',10,20);return}
+const lo=Math.min(...ys)*.999,hi=Math.max(...ys)*1.001,P=50,X=i=>P+i*(W-P-8)/(n-1),Y=v=>H-20-(v-lo)/(hi-lo)*(H-30);g.fillStyle='#8b95a3';g.font='11px sans-serif';g.strokeStyle='#262d36';for(let i=0;i<=3;i++){const v=lo+(hi-lo)*i/3,y=Y(v);g.beginPath();g.moveTo(P,y);g.lineTo(W-8,y);g.stroke();g.fillText(Math.round(v),2,y+4)}
+g.strokeStyle=col;g.lineWidth=2;g.beginPath();ys.forEach((v,i)=>i?g.lineTo(X(i),Y(v)):g.moveTo(X(i),Y(v)));g.stroke()}
+
+document.getElementById('app').innerHTML=`<h1>Bot RSI(2) sur ${m.symbol}<span class="badge ${m.label=='REPLAY'?'r':''}">${m.label=='REPLAY'?'REPLAY historique (simulation du passé)':'SIMULATION - démo, aucun argent réel'}</span></h1>
+<div class=sub>Départ ${m.start} · dernière clôture ${k.date} · portefeuille virtuel 10 000 $ · 1 décision/jour après la clôture US</div>
+<div class=cards>
+<div class=card><span class=l>Valeur du portefeuille</span><b>${f(k.equity)} $</b></div>
+<div class=card><span class=l>Performance bot</span><b class=${cl(k.ret)}>${f(k.ret)} %</b></div>
+<div class=card><span class=l>${m.symbol} buy &amp; hold</span><b class=${cl(k.bench)}>${f(k.bench)} %</b></div>
+<div class=card><span class=l>Perte max (drawdown)</span><b class=neg>${f(k.mdd)} %</b></div>
+<div class=card><span class=l>Trades clos / gagnants</span><b>${k.trades} / ${f(k.win,0)} %</b></div></div>
+<section><h2>Portefeuille vs ${m.symbol} buy &amp; hold</h2><canvas id=c></canvas><div class=leg><span style="color:#58a6ff">&#9632; Bot</span><span style="color:#8b95a3">&#9632; ${m.symbol} buy &amp; hold</span></div></section>
+<section><h2>Position actuelle</h2>${k.shares>0?`${k.shares} ${m.symbol} à ${f(k.price)} $ = ${f(k.shares*k.price)} $ · cash ${f(k.cash)} $`:`Aucune position (100 % cash : ${f(k.cash)} $)`}</section>
+<section><h2>Journal des décisions (40 derniers jours)</h2><table><tr><th>Date</th><th>Clôture</th><th>RSI(2)</th><th>Décision</th><th>Raisonnement</th></tr>${D.dec.map(d=>`<tr><td>${d.date}</td><td>${f(d.close)}</td><td>${d.rsi===''?'-':f(d.rsi,1)}</td><td><b class="${d.action=='BUY'?'pos':d.action=='SELL'?'neg':''}">${d.action}</b></td><td>${d.reasoning}</td></tr>`).join('')}</table></section>
+<section><h2>Trades</h2><table><tr><th>Entrée</th><th>Prix</th><th>Sortie</th><th>Prix</th><th>Qté</th><th>P&amp;L $</th><th>%</th></tr>${D.tr.map(t=>`<tr><td>${t.entry_date}</td><td>${f(t.entry_px)}</td><td>${t.exit_date||'en cours'}</td><td>${t.exit_px===''?'-':f(t.exit_px)}</td><td>${t.qty}</td><td class=${t.pnl===''?'':cl(t.pnl)}>${t.pnl===''?'-':f(t.pnl)}</td><td class=${t.ret_pct===''?'':cl(t.ret_pct)}>${t.ret_pct===''?'-':f(t.ret_pct)}</td></tr>`).join('')}</table></section>
+${D.ict?ictSection(D.ict):''}<div class=warn>Simulation uniquement: aucun ordre réel n'est possible dans ce code. Exécution simulée au cours d'ouverture suivant avec 0,02 % de slippage. Performances passées ne prédisent pas les futures.</div>`;
+(function(){const c=document.getElementById('c'),r=devicePixelRatio||1,W=c.clientWidth,H=c.clientHeight;c.width=W*r;c.height=H*r;const g=c.getContext('2d');g.scale(r,r);
+const a=D.eq.equity,b=D.eq.bench,n=a.length,all=a.concat(b),lo=Math.min(...all)*.98,hi=Math.max(...all)*1.02,P=40;
+const X=i=>P+i*(W-P-8)/(n-1),Y=v=>H-20-(v-lo)/(hi-lo)*(H-30);
+g.strokeStyle='#262d36';g.fillStyle='#8b95a3';g.font='11px sans-serif';for(let i=0;i<=4;i++){const v=lo+(hi-lo)*i/4,y=Y(v);g.beginPath();g.moveTo(P,y);g.lineTo(W-8,y);g.stroke();g.fillText(Math.round(v),2,y+4)}
+[[0,D.eq.date[0]],[Math.floor(n/2),D.eq.date[Math.floor(n/2)]],[n-1,D.eq.date[n-1]]].forEach(([i,d],j)=>{g.textAlign=j==2?'right':j==0?'left':'center';g.fillText(d,X(i),H-4)});g.textAlign='left';
+[[b,'#8b95a3'],[a,'#58a6ff']].forEach(([s,col])=>{g.strokeStyle=col;g.lineWidth=2;g.beginPath();s.forEach((v,i)=>i?g.lineTo(X(i),Y(v)):g.moveTo(X(i),Y(v)));g.stroke()})})();
+if(D.ict)drawLine('c2',null,D.ict.curve.map(p=>p[1]),'#d29922');
+</script></body></html>
